@@ -1,27 +1,29 @@
+
 import socket
 
-client_socket = socket.socket()
-port = 8080
-client_socket.connect(('127.0.0.1',port))
+HEADER = 64
+PORT = 5050
+FORMAT = 'utf-8'
+DISCONNECT_MESSAGE = "!DISCONNECT"
+SERVER = "192.168.1.26"
+ADDR = (SERVER, PORT)
 
-#recieve connection message from server
-recv_msg = client_socket.recv(1024)
-print recv_msg
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(ADDR)
 
-#send user details to server
-send_msg = raw_input("Enter your user name(prefix with #):")
-client_socket.send(send_msg)
+def send(msg):
+    message = msg.encode(FORMAT)
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b' ' * (HEADER - len(send_length))
+    client.send(send_length)
+    client.send(message)
+    print(client.recv(2048).decode(FORMAT))
 
+send("Hello World!")
+input()
+send("Hello Everyone!")
+input()
+send("Hello Tim!")
 
-#receive and send message from/to different user/s
-
-while True:
-    recv_msg = client_socket.recv(1024)
-    print recv_msg
-    send_msg = raw_input("Send your message in format [@user:message] ")
-    if send_msg == 'exit':
-        break;
-    else:
-        client_socket.send(send_msg)
-
-client_socket.close()
+send(DISCONNECT_MESSAGE)
