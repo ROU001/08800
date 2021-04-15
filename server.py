@@ -1,30 +1,43 @@
-import socket,select
+import socket 
+import threading
 
-port = 8080
-socket_list = []
-users = {}
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind(('',port))
-server_socket.listen(5)
-socket_list.append(server_socket)
-while True:
-    ready_to_read,ready_to_write,in_error = select.select(socket_list,[],[],0)
-    for sock in ready_to_read:
-        if sock == server_socket:
-            connect, addr = server_socket.accept()
-            socket_list.append(connect)
-            connect.send("You are connected from:" + str(addr))
-        else:
-            try:
-                data = sock.recv(2048)
-                if data.startswith("#"):
-                    users[data[1:].lower()]=connect
-                    print "User " + data[1:] +" added."
-                    connect.send("Your user detail saved as : "+str(data[1:]))
-                elif data.startswith("@"):
-                    users[data[1:data.index(':')].lower()].send(data[data.index(':')+1:])
-            except:
-                continue
+HEADER = 64
+PORT = 5050
+SERVER = socket.gethostbyname(socket.gethostname())
+ADDR = (SERVER, PORT)
+FORMAT = 'utf-8'
+DISCONNECT_MESSAGE = "!DISCONNECT"
 
-server_socket.close()
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(ADDR)
+
+def handle_client(conn, addr):
+    print(f"[NEW CONNECTION] {addr} connected.")
+
+    connected = True
+    while connected:
+        msg_length = conn.recv(HEADER).decode(FORMAT)
+        if msg_length:
+            msg_length = int(msg_length)
+            msg = conn.recv(msg_length).decode(FORMAT)
+            if msg == DISCONNECT_MESSAGE:
+                connected = False
+
+            print(f"[{addr}] {msg}")
+            conn.send("Msg received".encode(FORMAT))
+
+    conn.close()
+        
+
+def start():
+    server.listen()
+    print(f"[LISTENING] Server is listening on {SERVER}")
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+
+
+print("[STARTING] server is starting...")
+start()
