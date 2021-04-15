@@ -1,6 +1,6 @@
 import socket,select
 
-port = 12345
+port = 8080
 socket_list = []
 users = {}
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
